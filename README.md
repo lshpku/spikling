@@ -22,13 +22,14 @@ We have tested on real and simulative spike sequences, and SpikeCNN reconstructs
 
 ## 使用方法
 &emsp;&emsp;本处理系统提供了**上手即用**的脉冲相机数据到图片、视频的转换，并为想要自己制造数据集进行训练的用户提供了数据预处理和训练的代码。<br>
-&emsp;&emsp;注：请根据各文件的实际路径调整参数。
+&emsp;&emsp;注：(1) 本代码已在不带CUDA的macOS和带CUDA的Windows上进行了测试；(2) 请根据各文件的实际路径调整参数。
 ### 使用传统方法进行转换
 - 加载脉冲相机数据为NumPy数组
 ```python
+import os
 from utils import load_spike_raw
 
-seq = load_spike_raw('./raw/operacut.dat')
+seq = load_spike_raw(os.path.join('raw', 'operacut.dat'))
 ```
 - 将特定帧转换为图片
 ```python
@@ -40,7 +41,7 @@ MIDDLE_FRAME = len(seq)//2  # 假设要截取中间的一帧
 
 result = interval_method(seq, MIDDLE_FRAME)
 img = Image.fromarray(result)
-img.save('./result/operacut-intv.png')
+img.save(os.path.join('result', 'operacut-intv.png'))
 
 # 窗口法
 START_FRAME = len(seq)//2
@@ -48,7 +49,7 @@ WINDOW_SIZE = 32
 
 result = window_method(seq, START_FRAME, WINDOW_SIZE)
 img = Image.fromarray(result)
-img.save('./result/operacut-win.png')
+img.save(os.path.join('result', 'operacut-win.png'))
 ```
 - 从脉冲序列生成视频
 ```python
@@ -60,26 +61,32 @@ from display import (
 
 STRIDE = 2  # 每生成1帧视频跨越2帧spike数据
 
+# 由于原始序列太长，这里只转换一小部分
+seq_s = seq[:48]
+
 # 展示原始脉冲数据
-transform_raw(seq, STRIDE, './result/operacut-raw.avi')
+transform_raw(seq_s, STRIDE,
+              os.path.join('result', 'operacut-raw.avi'))
 
 # 间隔法
-transform_interval(seq, STRIDE, './result/operacut-intv.avi')
+transform_interval(seq_s, STRIDE,
+                   os.path.join('result', 'operacut-intv.avi'))
 
 # 窗口法
-transform_window(seq, WINDOW_SIZE, STRIDE,
-                 './result/operacut-win.avi')
+transform_window(seq_s, WINDOW_SIZE, STRIDE,
+                 os.path.join('result', 'operacut-win.avi'))
 ```
 ### 使用深度学习方法进行转换
 - 加载预训练模型
 ```python
+import os
 import torch
 from model import Generator
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 gen = Generator()
-gen.load('./checkpoint/spikling-dd-0027.pth').to(device)
+gen.load(os.path.join('checkpoint', 'spikling-0027.pth'))
 ```
 - 将特定帧转换为图片
 ```python
@@ -87,13 +94,13 @@ from PIL import Image
 from utils import load_spike_raw
 from evaluate import generate
 
-seq = load_spike_raw('./raw/operacut.dat')
+seq = load_spike_raw(os.path.join('raw', 'operacut.dat'))
 
 START_FRAME = len(seq)//2
 
 result = generate(gen, seq, START_FRAME)
 img = Image.fromarray(result)
-img.save('./result/operacut-middle.png')
+img.save(os.path.join('result', 'operacut-gen.png'))
 ```
 - 从脉冲序列生成视频（建议在GPU环境下进行）
 ```python
@@ -101,27 +108,29 @@ from display import transform_gen
 
 STRIDE = 2
 
-transform_gen(gen, seq, './result/operacut-gen.avi', STRIDE)
+seq_s = seq[:48]
+
+transform_gen(gen, seq_s, STRIDE,
+              os.path.join('result', 'operacut-gen.avi'))
 ```
 ### 训练深度学习模型
 - 生成模拟脉冲数据<br>
 
 ```python
+import os
 from preprocess import video_to_spike
 
 # 必须与当前SpikeCNN的设置一致
 WINDOW_SIZE = 32
 FRAME_SIZE = (256, 256)
 
-my_videos = os.listdir('./video')  # 源视频存放的位置
-out_pattern = './data/sp{:04d}.npz'  # 结果保存的位置
-counter = 1
+my_videos = os.listdir('video')  # 源视频存放的位置
+out_pattern = 'sp{:04d}.npz'  # 结果命名模板
 
 for i in my_videos:
-    if i.lower.endswith('.mov'):
-        out_name = out_pattern.format(counter)
+    if i.lower.endswith('.mp4'):
+        out_name = os.path.join('data', out_pattern)
         video_to_spike(i, FRAME_SIZE, WINDOW_SIZE, out_name)
-        counter += 1
 ```
 - 训练
 
@@ -145,7 +154,7 @@ betas = (0.5, 0.999)
 $ python3 train.py
 ```
 ### 预训练模型与预处理数据集
-&emsp;&emsp;我们提供了一个预训练的模型权重`checkpoint/spikling-0027.pth`，以及一个含有5.2k段模拟脉冲序列的数据集`data/`，下载地址：[北大网盘](https://disk.pku.edu.cn:443/link/B859EF922D2EAEA5AEA9EC1415DDA103 "北大网盘")；或：[百度网盘](https://disk.pku.edu.cn:443/link/B859EF922D2EAEA5AEA9EC1415DDA103 "北大网盘")，密码：。<br>
+&emsp;&emsp;我们提供了一个预训练的模型权重`checkpoint/spikling-0027.pth`，以及一个含有5.2k段模拟脉冲序列的数据集`data/`，下载地址：[北大网盘](https://disk.pku.edu.cn:443/link/B859EF922D2EAEA5AEA9EC1415DDA103 "北大网盘")；或：[百度网盘](https://pan.baidu.com/s/1JnzcsHROTUvHu6T8EyY6EQ "百度网盘")（密码：x23f）。<br>
 &emsp;&emsp;我们没有对训练集与验证集进行划分，您可以自行划分，例如用下面的代码将1%的数据*随机*划分到验证集：
 ```bash
 $ mv ./data/*01.pth ./eval

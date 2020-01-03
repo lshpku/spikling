@@ -11,12 +11,11 @@ class BasicModel(nn.Module):
         with specified names.
     '''
 
-    def __init__(self, name: str):
+    def __init__(self):
         super().__init__()
-        self.name = name
         self.device = torch.device('cpu')
 
-    def save(self, path):
+    def save(self, path: str):
         torch.save(self.state_dict(), path)
         print('save model to \"{}\"'.format(path))
 
@@ -26,12 +25,13 @@ class BasicModel(nn.Module):
             self.load_state_dict(state)
             print('load pre-trained model \"{}\"'.format(path))
         else:
-            print('init model \"{}\"'.format(self.name))
+            print('init model')
         return self
     
-    def to(self, device):
+    def to(self, device: torch.device):
         self.device = device
-        self.to(device)
+        super().to(device)
+        return self
 
 
 class Generator(BasicModel):

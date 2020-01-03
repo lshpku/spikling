@@ -6,22 +6,18 @@
 #
 import cv2
 import numpy as np
-import os
 from utils import dump_spike_numpy
 
+counter = 1
 
-def video_to_spike(path: str, size: tuple, window: int):
+
+def video_to_spike(path: str, size: tuple, window: int, save_path: str):
     '''
     Transform a video to simulative raw spike data.\n
     Outputs are `.npz` files each containing a pair of array `x` and
         `y`, where `x` is of shape (`window`, `height`, `width`) and
         `y` is of shape (`height`, `width`).
     '''
-    filename = os.path.basename(path)
-    dirname = os.path.dirname(path)
-    basename = filename[:filename.rfind('.')]
-    npzname = '{}-{{:03d}}.npz'.format(basename)
-    npzname = os.path.join(dirname, npzname)
 
     cap = cv2.VideoCapture(path)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -39,7 +35,7 @@ def video_to_spike(path: str, size: tuple, window: int):
     cbottom = height - ctop
 
     adder = np.random.random((size[1], size[0])) * 255
-    win_num = 1
+    win_num = 0
     win_size = 0
     xframes = []  # (window, height, width)
     yframe = None   # (height, width)
@@ -51,12 +47,12 @@ def video_to_spike(path: str, size: tuple, window: int):
 
         frame = frame[ctop:cbottom, cleft:cright, :]
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-        frame = cv2.resize(frame, size, interpolation=cv2.INTER_AREA)
+        frame = cv2.resize(frame, size, interpolation=cv2.INTER_LINEAR)
 
         adder += frame
-        saturated = adder >= 255  # saturated is a 0/1 matrix
+        saturated = adder >= 255  # saturated is a bool matrix
         xframes.append(saturated)
-        adder -= saturated * 255  # or adder *= 1 - saturated ?
+        adder -= saturated * 255
 
         if win_size == window // 2:  # choose the middle frame as y
             yframe = frame
@@ -64,19 +60,19 @@ def video_to_spike(path: str, size: tuple, window: int):
         if win_size == window:  # end this window
             xframes = np.array(xframes).astype(np.bool)
             yframe = yframe.astype(np.uint8)
-            dump_spike_numpy(npzname.format(win_num), xframes, yframe)
+            global counter
+            dump_spike_numpy(save_path.format(counter), xframes, yframe)
+            counter += 1
             xframes = []
             win_size = 0
             win_num += 1
-            print('\rtransforming: {}/{}'.format(win_num, frame_num/window),
+            print('\rtransforming: {}/{}'.format(win_num, frame_num // window),
                   end='', flush=True)
 
+    print()
     cap.release()
     cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
-    files = os.listdir()
-    for i in files:
-        if i.lower.endswith('.MOV'):
-            video_to_spike(i, (128, 128), 32)
+    pass

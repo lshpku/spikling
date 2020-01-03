@@ -7,12 +7,8 @@ import numpy as np
 import random
 import torch
 import torch.nn as nn
-import torch.nn.parallel
-import torch.backends.cudnn as cudnn
-import torch.optim as optim
 from torch.utils.data import Dataset
 from PIL import Image
-from model import Generator, Discriminator
 
 
 class SpikeDataset(Dataset):
@@ -101,49 +97,6 @@ def get_latest_version(root: str, model: str) -> int:
         if match:
             same.append(int(match.group(1)))
     return max(same)
-
-
-def load_model(root: str, model: str, version: int = 'latest',
-               device=torch.device('cpu')) -> (nn.Module, nn.Module):
-    netG = Generator().to(device)
-    netD = Discriminator().to(device)
-    if version == 'latest':
-        version = get_latest_version(root, model)
-    path = os.path.join(root, 'spikling-{}-{:04d}.pth'.format(model, version))
-    if os.path.exists(path):
-        state = torch.load(path, map_location=device)
-        netG.load_state_dict(state['netG_state'])
-        netD.load_state_dict(state['netD_state'])
-        print('Load pre-trained model {}'.format(path))
-    else:
-        netG.apply(weights_init)
-        netD.apply(weights_init)
-        print('Init new model')
-    return netG, netD
-
-
-def save_model(netG: nn.Module, netD: nn.Module, root: str,
-               model: str, version: int = 'latest'):
-    if version == 'latest':
-        version = get_latest_version(root, model) + 1
-    path = os.path.join(root, 'spikling-{}-{:04d}.pth'.format(model, version))
-    torch.save({
-        'netD_state': netD.state_dict(),
-        'netG_state': netG.state_dict(),
-    }, path)
-    print('Model saved to {}'.format(path))
-
-
-def weights_init(m):
-    '''
-    Initialize custom weights as in SRGAN.
-    '''
-    classname = m.__class__.__name__
-    if classname in ['Conv2d', 'ConvTranspose2d']:
-        nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname in ['BatchNorm2d']:
-        nn.init.normal_(m.weight.data, 1.0, 0.02)
-        nn.init.constant_(m.bias.data, 0)
 
 
 def online_generate(model: nn.Module, seq: np.ndarray,
