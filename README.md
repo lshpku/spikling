@@ -139,7 +139,15 @@ betas = (0.5, 0.999)
 
 # 以及trainset和evalset的路径
 ```
-设置完成后，直接运行`train.py`开始训练（建议在GPU环境下进行）
+为了实现VGGLoss，您还需要一个预训练好的VGG19模型，您可以轻松在其他人的项目中下载此类模型，故在此不提供。<br>
+运行`train.py`开始训练（建议在GPU环境下进行）
 ```bash
 $ python3 train.py
 ```
+### 预训练模型与预处理数据集
+我们提供了一个预训练的模型权重`checkpoint/spikling-0027.pth`，以及一个含有5.2k段模拟脉冲序列的数据集`data/`，下载地址：[北大网盘](https://disk.pku.edu.cn:443/link/B859EF922D2EAEA5AEA9EC1415DDA103 "北大网盘")；或[百度网盘](https://disk.pku.edu.cn:443/link/B859EF922D2EAEA5AEA9EC1415DDA103 "北大网盘")，密码：。<br>
+我们没有对训练集与验证集进行划分，您可以自行划分，例如用下面的代码将1%的数据*随机*划分到验证集：
+```bash
+$ mv ./data/*01.pth ./eval
+```
+真实脉冲相机的数据属于学校资源，因版权问题无法提供，但您仍然可以用模拟脉冲数据体会该模型的神奇之处。
