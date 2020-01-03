@@ -7,10 +7,10 @@ from torch.utils.data import DataLoader
 from model import Generator, VGGLoss
 from utils import SpikeDataset
 
-LAMBDA_VGG = 1.0
 LAMBDA_L2 = 100.0
+LAMBDA_VGG = 1.0
 BATCH_SIZE = 1
-EVAL_EVERY = 30
+EVAL_EVERY = 8
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -36,11 +36,11 @@ def train_epoch():
 
     for i, data in enumerate(dataloader):
         x, real_y = data[0].to(device), data[1].to(device)
-        
+
         optimizerG.zero_grad()
         fake_y = netG(x)
         loss_vgg = vggloss(real_y, fake_y) * LAMBDA_VGG
-        loss_l2 = l2loss(real_y, fake_y) * LAMBDA_PIX
+        loss_l2 = l2loss(real_y, fake_y) * LAMBDA_L2
 
         loss_G = loss_l2 + loss_vgg
         loss_G.backward()
@@ -52,11 +52,11 @@ def train_epoch():
               end='', flush=True)
 
         if (i+1) % EVAL_EVERY == 0:
-            eval_loss_vgg, eval_loss_l2 = online_eval()
+            eval_loss_l2, eval_loss_vgg = online_eval()
             avg_loss_l2 = avg_loss_l2.item() / EVAL_EVERY
             avg_loss_vgg = avg_loss_vgg.item() / EVAL_EVERY
 
-            with open('LGVD_eLV.txt', 'a') as f:
+            with open('loss-l2_vgg.txt', 'a') as f:
                 f.write('{}\t{}\t{}\t{}\n'.format(
                     avg_loss_l2, avg_loss_vgg,
                     eval_loss_l2, eval_loss_vgg))
@@ -84,5 +84,5 @@ def online_eval():
 for i in range(50):
     print('epoch {}:'.format(i+1))
     train_epoch()
-    save_model(netG, netD, '.', MODEL_NAME)
-    online_eval(netG, device, i+1)
+    netG.save(os.path.join('checkpoint',
+                           'spikling-{:04d}.pth'.format(i+1)))

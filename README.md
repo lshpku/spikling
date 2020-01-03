@@ -56,7 +56,7 @@ img.save(os.path.join('result', 'operacut-win.png'))
 from display import (
     transform_raw,
     transform_interval,
-    transfrom_window,
+    transform_window,
 )
 
 STRIDE = 2  # 每生成1帧视频跨越2帧spike数据
@@ -128,9 +128,10 @@ my_videos = os.listdir('video')  # 源视频存放的位置
 out_pattern = 'sp{:04d}.npz'  # 结果命名模板
 
 for i in my_videos:
-    if i.lower.endswith('.mp4'):
+    if i.lower().endswith('.mp4'):
+        in_name = os.path.join('video', i)
         out_name = os.path.join('data', out_pattern)
-        video_to_spike(i, FRAME_SIZE, WINDOW_SIZE, out_name)
+        video_to_spike(in_name, FRAME_SIZE, WINDOW_SIZE, out_name)
 ```
 - 训练
 
@@ -140,16 +141,16 @@ BATCH_SIZE = 16
 EVAL_EVERY = 30  # 每30个batch在验证集上跑一次
 
 # VGGLoss和L2Loss占的比例
-LAMBDA_VGG = 1.0
 LAMBDA_L2 = 100.0
+LAMBDA_VGG = 1.0
 
 # Adam优化器的超参数
 lr = 0.0002
 betas = (0.5, 0.999)
 
-# 以及trainset和evalset的路径
+# 以及vgg19、trainset和evalset的路径
 ```
-为了实现VGGLoss，您还需要一个预训练好的VGG19模型，您可以轻松在其他人的项目中下载此类模型，故在此不提供。<br>
+为了使用VGGLoss，您还需要一个预训练好的VGG19模型。由于版权问题，我们无法提供该模型，您可以在GitHub上其他公开的仓库中获取该模型。<br>
 运行`train.py`开始训练（建议在GPU环境下进行）
 ```bash
 $ python3 train.py
@@ -160,4 +161,4 @@ $ python3 train.py
 ```bash
 $ mv ./data/*01.pth ./eval
 ```
-真实脉冲相机的数据属于学校资源，因版权问题无法提供，但您仍然可以用模拟脉冲数据体会该模型的神奇之处。
+真实脉冲相机的数据属于学校资源，因版权问题无法提供；但从测试结果来看，模拟脉冲数据已经足够反映真实脉冲数据的特征，您可以用模拟数据正常使用该模型。
