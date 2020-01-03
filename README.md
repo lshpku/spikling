@@ -28,7 +28,7 @@ We have tested on real and simulative spike sequences, and SpikeCNN reconstructs
 ```python
 from utils import load_spike_raw
 
-car = load_spike_raw('./raw/operacut.dat')
+seq = load_spike_raw('./raw/operacut.dat')
 ```
 - 将特定帧转换为图片
 ```python
@@ -36,17 +36,17 @@ from PIL import Image
 from evaluate import interval_method, window_method
 
 # 间隔法
-MIDDLE_FRAME = len(car)//2  # 假设要截取中间的一帧
+MIDDLE_FRAME = len(seq)//2  # 假设要截取中间的一帧
 
-result = interval_method(car, MIDDLE_FRAME)
+result = interval_method(seq, MIDDLE_FRAME)
 img = Image.fromarray(result)
 img.save('./result/operacut-intv.png')
 
 # 窗口法
-START_FRAME = len(car)//2
+START_FRAME = len(seq)//2
 WINDOW_SIZE = 32
 
-result = window_method(car, START_FRAME, WINDOW_SIZE)
+result = window_method(seq, START_FRAME, WINDOW_SIZE)
 img = Image.fromarray(result)
 img.save('./result/operacut-win.png')
 ```
@@ -61,13 +61,13 @@ from display import (
 STRIDE = 2  # 每生成1帧视频跨越2帧spike数据
 
 # 展示原始脉冲数据
-transform_raw(car, STRIDE, './result/operacut-raw.avi')
+transform_raw(seq, STRIDE, './result/operacut-raw.avi')
 
 # 间隔法
-transform_interval(car, STRIDE, './result/operacut-intv.avi')
+transform_interval(seq, STRIDE, './result/operacut-intv.avi')
 
 # 窗口法
-transform_window(car, WINDOW_SIZE, STRIDE,
+transform_window(seq, WINDOW_SIZE, STRIDE,
                  './result/operacut-win.avi')
 ```
 ### 使用深度学习方法进行转换
@@ -87,11 +87,11 @@ from PIL import Image
 from utils import load_spike_raw
 from evaluate import generate
 
-car = load_spike_raw('./raw/operacut.dat')
+seq = load_spike_raw('./raw/operacut.dat')
 
-START_FRAME = len(car)//2
+START_FRAME = len(seq)//2
 
-result = generate(gen, car, START_FRAME)
+result = generate(gen, seq, START_FRAME)
 img = Image.fromarray(result)
 img.save('./result/operacut-middle.png')
 ```
@@ -101,7 +101,7 @@ from display import transform_gen
 
 STRIDE = 2
 
-transform_gen(gen, car, './result/operacut-gen.avi', STRIDE)
+transform_gen(gen, seq, './result/operacut-gen.avi', STRIDE)
 ```
 ### 训练深度学习模型
 - 生成模拟脉冲数据<br>
@@ -145,9 +145,9 @@ betas = (0.5, 0.999)
 $ python3 train.py
 ```
 ### 预训练模型与预处理数据集
-我们提供了一个预训练的模型权重`checkpoint/spikling-0027.pth`，以及一个含有5.2k段模拟脉冲序列的数据集`data/`，下载地址：[北大网盘](https://disk.pku.edu.cn:443/link/B859EF922D2EAEA5AEA9EC1415DDA103 "北大网盘")；或[百度网盘](https://disk.pku.edu.cn:443/link/B859EF922D2EAEA5AEA9EC1415DDA103 "北大网盘")，密码：。<br>
-我们没有对训练集与验证集进行划分，您可以自行划分，例如用下面的代码将1%的数据*随机*划分到验证集：
+&emsp;&emsp;我们提供了一个预训练的模型权重`checkpoint/spikling-0027.pth`，以及一个含有5.2k段模拟脉冲序列的数据集`data/`，下载地址：[北大网盘](https://disk.pku.edu.cn:443/link/B859EF922D2EAEA5AEA9EC1415DDA103 "北大网盘")；或：[百度网盘](https://disk.pku.edu.cn:443/link/B859EF922D2EAEA5AEA9EC1415DDA103 "北大网盘")，密码：。<br>
+&emsp;&emsp;我们没有对训练集与验证集进行划分，您可以自行划分，例如用下面的代码将1%的数据*随机*划分到验证集：
 ```bash
 $ mv ./data/*01.pth ./eval
 ```
-真实脉冲相机的数据属于学校资源，因版权问题无法提供，但您仍然可以用模拟脉冲数据体会该模型的神奇之处。
+&emsp;&emsp;真实脉冲相机的数据属于学校资源，因版权问题无法提供，但您仍然可以用模拟脉冲数据体会该模型的神奇之处。
