@@ -1,54 +1,42 @@
 import os
-import random
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.parallel
-import torch.backends.cudnn as cudnn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from model import Generator, Discriminator, VGGLoss
-from utils import SpikeDataset, load_model, save_model
-from utils import online_eval
+from torch.utils.data import DataLoader
+from model import Generator, VGGLoss
+from utils import SpikeDataset
 
 LAMBDA_VGG = 1.0
-LAMBDA_PIX = 100.0
+LAMBDA_L2 = 100.0
 BATCH_SIZE = 1
-MODEL_NAME = 'dd'
+EVAL_EVERY = 30
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-netG, netD = load_model('.', MODEL_NAME, device=device)
+netG = Generator().to(device)
 
-# Note: for BCE-kind losses, labels must be put second!
-blgloss = nn.BCEWithLogitsLoss()
 l2loss = nn.MSELoss()
-vggloss = VGGLoss().to(device)
+vggloss = VGGLoss('vgg19-conv.pth').to(device)
 
 lr = 0.0002
 betas = (0.5, 0.999)
 optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=betas)
 
 dataset = SpikeDataset('data')
-dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True,
-                        num_workers=8, pin_memory=True)
+dataloader = DataLoader(dataset, BATCH_SIZE, True, pin_memory=True)
 evalset = SpikeDataset('eval')
-evalloader = DataLoader(evalset, batch_size=BATCH_SIZE, num_workers=8,
-                        pin_memory=True)
+evalloader = DataLoader(evalset, BATCH_SIZE, pin_memory=True)
 
 
 def train_epoch():
-    avg_loss_l2, avg_loss_gan, avg_loss_vgg, avg_loss_D = 0, 0, 0, 0
+    avg_loss_l2, avg_loss_vgg = 0, 0
     size = len(dataloader)
     slen = len(str(size))
 
     for i, data in enumerate(dataloader):
         x, real_y = data[0].to(device), data[1].to(device)
-
-        '''
-        Updata generator
-        loss_G = l2_loss + gan_loss + vgg_loss
-        '''
+        
         optimizerG.zero_grad()
         fake_y = netG(x)
         loss_vgg = vggloss(real_y, fake_y) * LAMBDA_VGG
@@ -58,28 +46,39 @@ def train_epoch():
         loss_G.backward()
         optimizerG.step()
 
-        avg_loss_l2 += loss_l2.item()
-        avg_loss_vgg += loss_vgg.item()
+        avg_loss_l2 += loss_l2
+        avg_loss_vgg += loss_vgg
         print('\r{}/{}'.format(str(i+1).rjust(slen), size),
               end='', flush=True)
 
-        if i % 30 == 29:
-            eval_loss_vgg, eval_loss_l2 = 0, 0
-            for j, data in enumerate(evalloader):
-                x, real_y = data[0].to(device), data[1].to(device)
-                with torch.no_grad():
-                    fake_y = netG(x)
-                    eval_loss_vgg += vggloss(real_y, fake_y).item()
-                    eval_loss_l2 += l2loss(real_y, fake_y).item()
-            eval_loss_vgg *= LAMBDA_VGG
-            eval_loss_l2 *= LAMBDA_PIX
+        if (i+1) % EVAL_EVERY == 0:
+            eval_loss_vgg, eval_loss_l2 = online_eval()
+            avg_loss_l2 = avg_loss_l2.item() / EVAL_EVERY
+            avg_loss_vgg = avg_loss_vgg.item() / EVAL_EVERY
+
             with open('LGVD_eLV.txt', 'a') as f:
                 f.write('{}\t{}\t{}\t{}\n'.format(
-                    avg_loss_l2/30, avg_loss_vgg/30,
-                    eval_loss_l2/len(evalloader), eval_loss_vgg/len(evalloader)))
-            avg_loss_l2, avg_loss_gan, avg_loss_vgg, avg_loss_D = 0, 0, 0, 0
+                    avg_loss_l2, avg_loss_vgg,
+                    eval_loss_l2, eval_loss_vgg))
+            avg_loss_l2, avg_loss_vgg = 0, 0
 
     print()
+
+
+def online_eval():
+    eval_loss_l2, eval_loss_vgg = 0, 0
+
+    for j, data in enumerate(evalloader):
+        x, real_y = data[0].to(device), data[1].to(device)
+        with torch.no_grad():
+            fake_y = netG(x)
+            eval_loss_l2 += l2loss(real_y, fake_y)
+            eval_loss_vgg += vggloss(real_y, fake_y)
+
+    eval_loss_l2 *= LAMBDA_L2 / len(evalloader)
+    eval_loss_vgg *= LAMBDA_VGG / len(evalloader)
+
+    return eval_loss_l2.item(), eval_loss_vgg.item()
 
 
 for i in range(50):

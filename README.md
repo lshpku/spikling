@@ -21,8 +21,8 @@ We have tested on real and simulative spike sequences, and SpikeCNN reconstructs
 ![](/image/test-simu.png)
 
 ## 使用方法
-&emsp;&emsp;本处理系统提供了**上手即用**的脉冲相机数据到图片、视频的转换，并为想要自己制造数据集进行训练的用户提供了数据预处理和训练的代码。<br>
-&emsp;&emsp;注：(1) 本代码已在不带CUDA的macOS和带CUDA的Windows上进行了测试；(2) 请根据各文件的实际路径调整参数。
+本处理系统提供了**上手即用**的脉冲相机数据到图片、视频的转换，并为想要自己制造数据集进行训练的用户提供了数据预处理和训练的代码。<br>
+注：(1) 本代码已在带CUDA的Windows和不带CUDA的macOS上通过了测试；(2) 请根据各文件的实际路径调整参数。
 ### 使用传统方法进行转换
 - 加载脉冲相机数据为NumPy数组
 ```python
@@ -137,6 +137,7 @@ for i in my_videos:
 我们已经提供了一套调好的超参数，如果您必须调整，您需要在`train.py`中设置，可设置的参数有：
 ```python
 BATCH_SIZE = 16
+EVAL_EVERY = 30  # 每30个batch在验证集上跑一次
 
 # VGGLoss和L2Loss占的比例
 LAMBDA_VGG = 1.0
@@ -154,9 +155,9 @@ betas = (0.5, 0.999)
 $ python3 train.py
 ```
 ### 预训练模型与预处理数据集
-&emsp;&emsp;我们提供了一个预训练的模型权重`checkpoint/spikling-0027.pth`，以及一个含有5.2k段模拟脉冲序列的数据集`data/`，下载地址：[北大网盘](https://disk.pku.edu.cn:443/link/B859EF922D2EAEA5AEA9EC1415DDA103 "北大网盘")；或：[百度网盘](https://pan.baidu.com/s/1JnzcsHROTUvHu6T8EyY6EQ "百度网盘")（密码：x23f）。<br>
-&emsp;&emsp;我们没有对训练集与验证集进行划分，您可以自行划分，例如用下面的代码将1%的数据*随机*划分到验证集：
+我们提供了一个预训练的模型权重`checkpoint/spikling-0027.pth`，以及一个含有5.2k段模拟脉冲序列的数据集`data/`，下载地址：[北大网盘](https://disk.pku.edu.cn:443/link/B859EF922D2EAEA5AEA9EC1415DDA103 "北大网盘")；或：[百度网盘](https://pan.baidu.com/s/1JnzcsHROTUvHu6T8EyY6EQ "百度网盘")（密码：x23f）。<br>
+我们没有对训练集与验证集进行划分，您可以自行划分，例如用下面的代码将1%的数据*随机*划分到验证集：
 ```bash
 $ mv ./data/*01.pth ./eval
 ```
-&emsp;&emsp;真实脉冲相机的数据属于学校资源，因版权问题无法提供，但您仍然可以用模拟脉冲数据体会该模型的神奇之处。
+真实脉冲相机的数据属于学校资源，因版权问题无法提供，但您仍然可以用模拟脉冲数据体会该模型的神奇之处。
