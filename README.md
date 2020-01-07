@@ -82,6 +82,7 @@ transform_window(seq_s, WINDOW_SIZE, STRIDE,
 - 亮度曲线法。文件为```curve_brightness.py```。
 ```python
 import os
+from PIL import Image
 from utils import load_spike_raw
 from curve_brightness import brightness_polynome
 
