@@ -3,10 +3,10 @@ Spike Camera Image Restoration
 
 ## Requirements
 ```
-Python 3.7
+Python 3
 pytorch>=1.1.0
-opencv-python
-matplotlib
+opencv-python>=4.1.0
+matplotlib>=3.1.1
 ```
 
 ## Network Architecture
