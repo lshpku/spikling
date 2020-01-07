@@ -23,6 +23,7 @@ We have tested on real and simulative spike sequences, and SpikeCNN reconstructs
 ## 使用方法
 本处理系统提供了**上手即用**的脉冲相机数据到图片、视频的转换，并为想要自己制造数据集进行训练的用户提供了数据预处理和训练的代码。<br>
 注：(1) 本代码已在带CUDA的Windows和不带CUDA的macOS上通过了测试；(2) 请根据各文件的实际路径调整参数。
+
 ### 使用传统方法进行转换
 - 加载脉冲相机数据为NumPy数组
 ```python
@@ -66,7 +67,7 @@ seq_s = seq[:48]
 
 # 展示原始脉冲数据
 transform_raw(seq_s, STRIDE,
-              os.path.join('result', 'operacut-raw.avi'))
+              os.path.join('result', 'raw/operacut-raw.avi'))
 
 # 间隔法
 transform_interval(seq_s, STRIDE,
@@ -76,6 +77,31 @@ transform_interval(seq_s, STRIDE,
 transform_window(seq_s, WINDOW_SIZE, STRIDE,
                  os.path.join('result', 'operacut-win.avi'))
 ```
+
+### 使用曲线拟合方法进行转换
+- 亮度曲线法。文件为```curve_brightness.py```。
+```python
+import os
+from utils import load_spike_raw
+from curve_brightness import brightness_polynome
+
+seq = load_spike_raw(os.path.join('raw', 'operacut.dat'))
+
+MAX_PREVIEW = 200  # 选择预览帧数
+
+result = brightness_polynome(seq, MAX_PREVIEW)
+Image.fromarray(result).save(os.path.join('result', 'operacut-poly.png'))
+```
+
+- 积分曲线法。文件为```curve_integral.py```。
+```python
+from curve_brightness import integral_polynome
+
+result = integral_polynome(seq, MAX_PREVIEW)
+Image.fromarray(result).save(os.path.join('result', 'operacut-ingr.png'))
+```
+- 滤波优化。文件为```flitering.py```。import后直接调用```smoothing()```和```denoising()```。
+
 ### 使用深度学习方法进行转换
 - 加载预训练模型
 ```python
