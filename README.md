@@ -83,6 +83,7 @@ transform_window(seq_s, WINDOW_SIZE, STRIDE,
 ```python
 import os
 from PIL import Image
+import numpy as np
 from utils import load_spike_raw
 from curve_brightness import brightness_polynome
 
@@ -91,15 +92,17 @@ seq = load_spike_raw(os.path.join('raw', 'operacut.dat'))
 MAX_PREVIEW = 200  # 选择预览帧数
 
 result = brightness_polynome(seq, MAX_PREVIEW)
-Image.fromarray(result).save(os.path.join('result', 'operacut-poly.png'))
+result = result.astype(np.uint8)
+Image.fromarray(result).save(os.path.join('result', 'operacut-brtnss.png'))
 ```
 
 - 积分曲线法。文件为```curve_integral.py```。
 ```python
-from curve_brightness import integral_polynome
+from curve_integral import integral_polynome
 
 result = integral_polynome(seq, MAX_PREVIEW)
-Image.fromarray(result).save(os.path.join('result', 'operacut-ingr.png'))
+result = result.astype(np.uint8)
+Image.fromarray(result).save(os.path.join('result', 'operacut-integr.png'))
 ```
 - 滤波优化。文件为```flitering.py```。import后直接调用```smoothing()```和```denoising()```。
 
